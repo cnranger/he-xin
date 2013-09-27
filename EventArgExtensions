@@ -1,0 +1,152 @@
+ public static class EventArgExtensions
+    {
+        /// <summary>
+        /// 	Thread safe way to raise event using the default EventArgs class
+        /// </summary>
+        public static void Raise(this EventHandler handler, object sender, EventArgs args)
+        {
+            // handler is already a copy to an "original" delegate reference so modifying "original" by another thread
+            // wont cause invocation in "handler" to change
+            if (handler != null)
+                handler(sender, args);
+        }
+
+        /// <summary>
+        /// 	Thread safe way to raise event using the default EventArgs class
+        /// </summary>
+        public static void Raise(this EventHandler handler, object sender)
+        {
+            if (handler != null)
+                handler(sender, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// 	Thread safe way to raise events. As handler is implicitly cloned when used with extension methods
+        /// 	this is guaranteed to be thread safe and not require us to explicitly copy the event handler collection.
+        /// </summary>
+        public static void Raise<TEventArgs>(this EventHandler<TEventArgs> handler, object sender, TEventArgs args) where TEventArgs : EventArgs
+        {
+            if (handler != null)
+                handler(sender, args);
+        }
+
+        /// <summary>
+        /// 	Convenience method to raise event taking a <see cref = "EventArgs{TItem}" /> argument in the thread safe way.
+        /// </summary>
+        /// <typeparam name = "TItem">Type of the event argument item.</typeparam>
+        /// <param name = "handler"></param>
+        /// <param name = "sender"></param>
+        /// <param name = "item"></param>
+        public static void Raise<TItem>(this EventHandler<EventArgs<TItem>> handler, object sender, TItem item)
+        {
+            if (handler != null)
+                handler(sender, new EventArgs<TItem>(item));
+        }
+
+        /// <summary>
+        /// 	Thread safe way to raise event with no event arguments
+        /// </summary>
+        public static void Raise(this PropertyChangedEventHandler handler, object sender, string propertyName)
+        {
+            if (handler != null)
+                handler(sender, new PropertyChangedEventArgs(propertyName));
+        }
+        
+        /// <summary>
+        /// 	Thread safe way to raise event with no event arguments
+        /// </summary>
+        public static void Raise(this PropertyChangingEventHandler handler, object sender, string propertyName)
+        {
+            if (handler != null)
+                handler(sender, new PropertyChangingEventArgs(propertyName));
+        }
+
+        /// <summary>
+        /// 	Thread safe way to raise events. Uses the generic event handler that doesn't require us to pass
+        /// 	a class inheriting from EventArgs (for convenience only). As handler is implicitly cloned when used with extension methods
+        /// 	this is guaranteed to be thread safe and not require us to explicitly copy the event handler collection.
+        /// </summary>
+        public static void Raise<TEventArgs>(this Action<object, TEventArgs> handler, object sender, TEventArgs args)
+        {
+            if (handler != null)
+                handler(sender, args);
+        }
+
+        public static void Raise<TEventArgs>(this Action<TEventArgs> handler, TEventArgs args)
+        {
+            if (handler != null)
+                handler(args);
+        }
+
+        /// <summary>
+        /// 	Helper function to raise the generic even handler class in a thread safe manner
+        /// </summary>
+        public static void Raise<TEventArgs>(this GenericEventHandler<TEventArgs> handler, object sender, TEventArgs args)
+        {
+            if (handler != null)
+                handler(sender, args);
+        }
+
+        /// <summary>
+        /// 	Helper function to raise the generic even handler class in a thread safe manner
+        /// </summary>
+        public static void Raise<TEventArgs1, TEventArgs2>(this GenericEventHandler<TEventArgs1, TEventArgs2> handler, object sender, TEventArgs1 args1, TEventArgs2 args2)
+        {
+            if (handler != null)
+                handler(sender, args1, args2);
+        }
+
+        /// <summary>
+        ///  Thread safe way to raise event on the Dispatcher thread (if not already on it) using the default EventArgs class
+        /// </summary>
+        public static void RaiseOnUI(this EventHandler handler, object sender, EventArgs args)
+        {
+            if (Thread.CurrentThread != Application.Current.Dispatcher.Thread)
+                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        if (handler != null) 
+                            handler(sender, args);
+                    }));
+            else
+            {
+                if (handler != null) 
+                    handler(sender, args);
+            }
+        }
+
+        /// <summary>
+        /// 	Thread safe way to raise event with no event arguments
+        /// </summary>
+        public static void RaiseOnUI(this PropertyChangedEventHandler handler, object sender, string propertyName)
+        {
+            if (Thread.CurrentThread != Application.Current.Dispatcher.Thread)
+                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (handler != null)
+                        handler(sender, new PropertyChangedEventArgs(propertyName));
+                }));
+            else
+            {
+                if (handler != null)
+                    handler(sender, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+
+        /// <summary>
+        /// 	Thread safe way to raise event with no event arguments
+        /// </summary>
+        public static void RaiseOnUI(this PropertyChangingEventHandler handler, object sender, string propertyName)
+        {
+            if (Thread.CurrentThread != Application.Current.Dispatcher.Thread)
+                Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (handler != null)
+                        handler(sender, new PropertyChangingEventArgs(propertyName));
+                }));
+            else
+            {
+                if (handler != null)
+                    handler(sender, new PropertyChangingEventArgs(propertyName));
+            }
+        }
+    }
