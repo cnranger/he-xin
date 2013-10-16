@@ -1,0 +1,101 @@
+ /// <summary>
+    /// Summary description for NonBlockingQueue.
+    /// Modeled after:http://www.cs.rochester.edu/u/scott/...de/queues.html
+    /// </summary>
+    public class NonBlockingQueue
+    {
+        private Queue Q;
+        private int count;
+
+        public int Count
+        {
+            get { return count; }
+        }
+
+        internal class Node
+        {
+            public object value; // User object.
+            public object next; // Next Node.
+
+            public Node(object value, Node next)
+            {
+                this.value = value;
+                this.next = next;
+            }
+        }
+
+        internal class Queue
+        {
+            public object Head = null; // Dequeue from head.
+            public object Tail = null; // Enqueue to tail.
+        }
+
+        public NonBlockingQueue()
+        {
+            Q = new Queue();
+            Node node = new Node(null, null);
+            Q.Head = node;
+            Q.Tail = node;
+        }
+
+        public void Enqueue(object value)
+        {
+            object node = new Node(value, null);
+            object tail;
+            object next;
+            while (true)
+            {
+                tail = Q.Tail;
+                next = ((Node) tail).next;
+                if (tail == Q.Tail) // Does tail equal Queue Tail.
+                {
+                    if (next == null)
+                    {
+                        // Try to link node at the end of the linked list
+                        if (next == Interlocked.CompareExchange(ref ((Node) tail).next, node,
+                                                                next))
+                            break; // enqueue is done; exit.
+                    }
+                    else // Tail was not pointing to null; Swing tail to next node.
+                        Interlocked.CompareExchange(ref Q.Tail, next, tail);
+                }
+            } // End loop
+            // Enqueue is done. Try to swing Tail to the inserted node.
+            Interlocked.CompareExchange(ref Q.Tail, node, tail);
+            Interlocked.Increment(ref count);
+        }
+
+        public object Dequeue()
+        {
+            object value;
+            object head;
+            object tail;
+            object next;
+            while (true)
+            {
+                head = Q.Head;
+                tail = Q.Tail;
+                next = ((Node) head).next;
+                if (head == Q.Head)
+                {
+                    if (head == tail) // Is queue empty or Tail falling behind?
+                    {
+                        if (next == null) // Is queue empty?
+                            return null; // Queue is empty.
+                        Interlocked.CompareExchange(ref Q.Tail, next, tail);
+                    }
+                    else // No need to deal with Tail.
+                    {
+                        // Read user value before exchange.
+                        // Otherwise, another dequeue might free the next node.
+                        value = ((Node) next).value;
+                        if (Interlocked.CompareExchange(ref Q.Head, next, head) == head)
+                        {
+                            Interlocked.Decrement(ref count);
+                            return value;
+                        }
+                    }
+                }
+            } // End loop.
+        }// End Dequeue
+    }// End Class
